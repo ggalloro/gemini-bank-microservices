@@ -1,0 +1,9 @@
+*.db
+__pycache__/
+.pytest_cache/
+.venv/
+.env
+*.pyc
+
+# Java / Maven build output
+target/

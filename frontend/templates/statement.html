@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">Statement — account #{{ account_id }}</h3>
+  <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('account_detail', account_id=account_id) }}">Back</a>
+</div>
+
+<form class="row g-2 align-items-end mb-4" method="get">
+  <div class="col-auto">
+    <label class="form-label small mb-0">From</label>
+    <input class="form-control form-control-sm" type="date" name="from" value="{{ filters.from }}">
+  </div>
+  <div class="col-auto">
+    <label class="form-label small mb-0">To</label>
+    <input class="form-control form-control-sm" type="date" name="to" value="{{ filters.to }}">
+  </div>
+  <div class="col-auto">
+    <label class="form-label small mb-0">Type</label>
+    <select class="form-select form-select-sm" name="type">
+      <option value="">All</option>
+      <option value="deposit" {% if filters.type == 'deposit' %}selected{% endif %}>Deposit</option>
+      <option value="payment_in" {% if filters.type == 'payment_in' %}selected{% endif %}>Payment in</option>
+      <option value="payment_out" {% if filters.type == 'payment_out' %}selected{% endif %}>Payment out</option>
+    </select>
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-primary btn-sm" type="submit">Filter</button>
+  </div>
+</form>
+
+<h5>Monthly summary</h5>
+{% if months %}
+<table class="table table-sm bg-white mb-4">
+  <thead><tr><th>Month</th><th class="text-end">In</th><th class="text-end">Out</th><th class="text-end">Net</th></tr></thead>
+  <tbody>
+    {% for m in months %}
+    <tr>
+      <td>{{ m.month }}</td>
+      <td class="text-end text-success">€{{ "%.2f"|format(m.total_in) }}</td>
+      <td class="text-end text-danger">€{{ "%.2f"|format(m.total_out) }}</td>
+      <td class="text-end">€{{ "%.2f"|format(m.net) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="text-muted">No summary data.</p>
+{% endif %}
+
+<h5>Transactions ({{ data.count }})</h5>
+{% if data.transactions %}
+<table class="table table-sm table-striped bg-white">
+  <thead>
+    <tr><th>Date</th><th>Type</th><th>Counterparty</th><th>Description</th><th class="text-end">Amount</th></tr>
+  </thead>
+  <tbody>
+    {% for t in data.transactions %}
+    <tr>
+      <td class="small">{{ t.date }}</td>
+      <td><span class="badge bg-secondary">{{ t.type }}</span></td>
+      <td>{{ t.counterparty or "—" }}</td>
+      <td>{{ t.description or "—" }}</td>
+      <td class="text-end {% if t.type == 'payment_out' %}text-danger{% else %}text-success{% endif %}">
+        {% if t.type == 'payment_out' %}-{% else %}+{% endif %}€{{ "%.2f"|format(t.amount) }}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="text-muted">No transactions match these filters.</p>
+{% endif %}
+{% endblock %}

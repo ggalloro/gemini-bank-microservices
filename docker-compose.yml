@@ -1,0 +1,94 @@
+# Gemini Bank microservices — full stack.
+# Bring everything up with:  docker compose up --build
+# Then browse to http://localhost:8080
+#
+# A shared TOKEN_SECRET lets the users service mint JWTs (HS256) that the Java
+# ledger service validates. Each data-owning service keeps its SQLite file on a
+# named volume.
+#
+# Running a second parallel stack (e.g. for a worktree demo): every published
+# host port is an env var with a default. Set them to non-clashing values, e.g.
+#
+#     USERS_PORT=9081 LEDGER_PORT=9082 STATEMENTS_PORT=9083 FRONTEND_PORT=9080 \
+#       COMPOSE_PROJECT_NAME=gemini-bank-2 docker compose up --build
+#
+# Container ports never change (services talk to each other by service name on
+# the default ports); only the published host ports shift.
+
+name: ${COMPOSE_PROJECT_NAME:-gemini-bank}
+
+services:
+  users:
+    build: ./users
+    environment:
+      TOKEN_SECRET: ${TOKEN_SECRET:-demo-shared-secret}
+      USERS_DB: /data/users.db
+    volumes:
+      - users-data:/data
+    ports:
+      - "${USERS_PORT:-8081}:8081"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8081/healthz').status==200 else sys.exit(1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  ledger:
+    build: ./ledger
+    environment:
+      TOKEN_SECRET: ${TOKEN_SECRET:-demo-shared-secret}
+      LEDGER_DB: /data/ledger.db
+    volumes:
+      - ledger-data:/data
+    ports:
+      - "${LEDGER_PORT:-8082}:8082"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8082/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+  statements:
+    build: ./statements
+    environment:
+      LEDGER_URL: http://ledger:8082
+    ports:
+      - "${STATEMENTS_PORT:-8083}:8083"
+    depends_on:
+      ledger:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8083/healthz').status==200 else sys.exit(1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  frontend:
+    build: ./frontend
+    environment:
+      USERS_URL: http://users:8081
+      LEDGER_URL: http://ledger:8082
+      STATEMENTS_URL: http://statements:8083
+      FRONTEND_SECRET: ${FRONTEND_SECRET:-demo-frontend-secret}
+    ports:
+      - "${FRONTEND_PORT:-8080}:8080"
+    depends_on:
+      users:
+        condition: service_healthy
+      ledger:
+        condition: service_healthy
+      statements:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8080/healthz').status==200 else sys.exit(1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  users-data:
+  ledger-data:
