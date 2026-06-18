@@ -6,7 +6,7 @@
 
 Gemini Bank today executes every payment that has sufficient funds. We want to protect customers by having **AI assess each payment for fraud risk** before any money moves, **holding suspicious ones for review** instead of letting them through. The AI is guided by the bank's risk criteria (below) and reasons over the full payment context — the free-text description and beneficiary name — together with the account's **current balance and recent payment history**, to return a structured verdict. When a payment is held, the customer is told in plain language why, and can resolve it from a simple review screen.
 
-> **How the AI is used:** the risk criteria, fraud taxonomy, and red-flag categories in this spec are supplied to the AI as guidance at assessment time — the application sends the AI the payment, the account context, and these criteria, and the AI applies them to reach a verdict. This mirrors the "Truffa o No?" demo, where the analysis criteria travel in the request to the model.
+> **How the AI is used:** the risk criteria, fraud taxonomy, and red-flag categories in this spec are supplied to the AI as guidance at assessment time — the application sends the AI the payment, the account context, and these criteria, and the AI applies them to reach a verdict.
 
 ---
 
