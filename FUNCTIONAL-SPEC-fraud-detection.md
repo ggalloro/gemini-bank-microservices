@@ -4,9 +4,9 @@
 
 ## Purpose
 
-Gemini Bank today executes every payment that has sufficient funds. We want to protect customers by having **AI assess each payment for fraud risk** before any money moves, **holding suspicious ones for review** instead of letting them through. The AI is guided by the bank's risk criteria (below) and reasons over the full payment context — including the free-text description and beneficiary name — to return a structured verdict. When a payment is held, the customer is told in plain language why, and can resolve it from a simple review screen.
+Gemini Bank today executes every payment that has sufficient funds. We want to protect customers by having **AI assess each payment for fraud risk** before any money moves, **holding suspicious ones for review** instead of letting them through. The AI is guided by the bank's risk criteria (below) and reasons over the full payment context — the free-text description and beneficiary name — together with the account's **current balance and recent payment history**, to return a structured verdict. When a payment is held, the customer is told in plain language why, and can resolve it from a simple review screen.
 
-> **How the AI is used:** the risk criteria, fraud taxonomy, and red-flag categories in this spec are supplied to the AI as guidance at assessment time — the application sends the AI the payment together with these criteria, and the AI applies them to reach a verdict. This mirrors the "Truffa o No?" demo, where the analysis criteria travel in the request to the model.
+> **How the AI is used:** the risk criteria, fraud taxonomy, and red-flag categories in this spec are supplied to the AI as guidance at assessment time — the application sends the AI the payment, the account context, and these criteria, and the AI applies them to reach a verdict. This mirrors the "Truffa o No?" demo, where the analysis criteria travel in the request to the model.
 
 ---
 
@@ -17,7 +17,7 @@ Gemini Bank today executes every payment that has sufficient funds. We want to p
 2. The AI assesses it as low risk, so it is approved and completed exactly as before.
 
 ### Journey 2 — A suspicious payment is held
-1. The customer makes a payment the AI judges risky — by the numbers (e.g. far larger than they normally send) and/or by the language (e.g. an urgent gift-card request, a crypto "opportunity", or pressure to keep it secret).
+1. The customer makes a payment the AI judges risky — by the numbers (e.g. far larger than they normally send, or to a beneficiary they've never paid before) and/or by the language (e.g. an urgent gift-card request, a crypto "opportunity", or pressure to keep it secret).
 2. Instead of completing, the payment is **held for review**. No money moves yet.
 3. The customer sees a clear "held for review" message with the **risk level**, the **suspected fraud type**, the specific **red flags** found, and a short plain-language **explanation**.
 
@@ -31,7 +31,7 @@ Gemini Bank today executes every payment that has sufficient funds. We want to p
 ## Features
 
 ### AI risk assessment at payment time
-Every outgoing payment is assessed by the AI before any money moves. The decision is based only on the **payment itself** (amount, beneficiary, description) and the **current account balance** — not the customer's past transactions or other accounts — together with the bank's risk criteria. The AI examines the **unstructured fields** — the payment description/memo and the beneficiary name — for social-engineering cues, and returns a structured verdict.
+Every outgoing payment is assessed by the AI before any money moves. The decision is based on the **payment itself** (amount, beneficiary, description), the **current account balance**, and the customer's **recent payment history** — together with the bank's risk criteria. The AI examines the **unstructured fields** — the payment description/memo and the beneficiary name — for social-engineering cues, and compares the payment against the customer's **normal behaviour** (typical amounts, usual beneficiaries, usual destinations), returning a structured verdict.
 
 ### Structured verdict
 For each payment the AI returns:
@@ -81,11 +81,13 @@ The AI classifies the payment into the single most likely category:
 
 The bank's risk policy, passed to the AI as guidance.
 
-**Behavioural signals (from the payment amount and the current balance only):**
+**Behavioural signals (from the payment, the current balance, and recent history):**
 - Payment is large relative to the account balance (e.g. more than ~80%).
-- A large external payment.
+- Payment is far larger than the customer's typical payment — an amount anomaly versus recent history.
+- A **first-time beneficiary** — money going somewhere the customer has never paid before.
+- An out-of-character destination or pattern versus history — e.g. a first external/overseas transfer for someone who only ever pays domestically, or an unusual frequency.
 
-The behavioural signals rely only on the payment and the current balance; the language red flags below carry the rest.
+A behavioural anomaly on its own can warrant a closer look; combined with a language red flag it is a strong signal.
 
 **Contextual / language red flags (from the free-text memo & beneficiary):**
 - **Urgency & pressure** — "act now", "within the hour", threats of loss.
@@ -118,4 +120,4 @@ Consistent with the existing Gemini Bank UI (light theme, Bootstrap, the 🏦 br
 
 ## Out of Scope
 
-No real anti-fraud models, no external fraud databases, no customer notifications by email/SMS. Synthetic data only — the example dataset should include a few payments with socially-engineered descriptions so the contextual (language) detection is demonstrable.
+No real anti-fraud models, no external fraud databases, no customer notifications by email/SMS. Synthetic data only — the example dataset should give each customer a **plausible payment history** (so behavioural anomalies are detectable) and include a few payments with socially-engineered descriptions (so the contextual/language detection is demonstrable).
